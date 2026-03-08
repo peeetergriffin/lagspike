@@ -13,5 +13,8 @@ Shows an on-screen overlay with:
 - Calculates jitter using standard deviation
 - Microsecond-precision timing
 
+## Credits
+- [Slideglide](https://github.com/slideglide) - Major performance improvements and overall help
+
 ## License
 This project is created by [Gryffin](https://github.com/peeetergriffin) under the [GNU General Public License v3.0](https://choosealicense.com/licenses/gpl-3.0/)
