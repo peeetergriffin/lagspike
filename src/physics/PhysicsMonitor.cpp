@@ -54,7 +54,6 @@ void PhysicsMonitor::TimerNode::update(float dt) {
         for (int i = 0; i < physicsTicksPerFrame; i++) {
             uint64_t current_tick_us = frame_start_us + (subTickStep_us * (i + 1));
             
-            // Pass -1 to measure actual deltas from system time, not synthetic ones
             m_monitor->beginPhysicsTick(-1.0f, current_tick_us);
             m_monitor->processInputIntoPhysics(current_tick_us);
         }
@@ -85,8 +84,6 @@ void PhysicsMonitor::beginPhysicsTick(float syntheticDelta_ms, uint64_t now_us) 
             m_missedFrames++;
         }
 
-        // Filter out garbage deltas (too large or negative)
-        // Valid range: 0.5ms to 500ms (handles any reasonable frame rate)
         if (delta_ms >= 0.5f && delta_ms <= 500.0f) {
             PhysicsFrame frame = {
                 now_us,
@@ -102,7 +99,6 @@ void PhysicsMonitor::beginPhysicsTick(float syntheticDelta_ms, uint64_t now_us) 
                 m_physicsHistory.pop_front();
             }
         } else if (delta_ms > 500.0f) {
-            // Garbage delta detected, reset tracking
             m_lastPhysicsTick_us = 0;
         }
         
@@ -211,8 +207,7 @@ bool PhysicsMonitor::isEngineStable() const {
     }
     recentMean /= recentCount;
     
-    // Detect sudden spikes: any frame that's significantly higher than recent average
-    float spikeThreshold = recentMean * 1.5f;  // 50% above average = lag spike
+    float spikeThreshold = recentMean * 1.5f;
     bool hasSuddenSpike = false;
     for (size_t i = m_physicsHistory.size() - recentCount; i < m_physicsHistory.size(); ++i) {
         if (m_physicsHistory[i].delta_ms > spikeThreshold) {
@@ -221,13 +216,11 @@ bool PhysicsMonitor::isEngineStable() const {
         }
     }
     
-    if (hasSuddenSpike) return false;  // Lag spike detected = immediately unstable
+    if (hasSuddenSpike) return false;
     
-    // SECONDARY: Check overall session stability and quality
     float stability = getStabilityPercentage();
     float jitter = calculateJitter();
     
-    // Session must be stable overall: 95%+ and jitter < 2.5ms
     return (stability >= 95.0f) && (jitter < 2.5f);
 }
 
