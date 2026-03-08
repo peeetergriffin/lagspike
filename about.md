@@ -1,6 +1,10 @@
 # Lagspike!
 This mod displays a real-time graph showing when your game stutters or experiences frame timing issues.
 
+## How to use
+- Enter a level
+- Press Ctrl+Y
+
 ## Features
 - See visual frame timing graph (green = stable, red = stutter)
 - Jitter measurement (how inconsistent your physics is)
@@ -19,3 +23,6 @@ The overlay shows:
 - A graph of the last 60 physics frames
 
 **That's it!** No configuration needed.
+
+## Known Issues
+- Speedhack adds extra jitter and A/P drift

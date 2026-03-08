@@ -1,3 +1,9 @@
+# 1.0.2
+- Fixed FPS unlocking bug (thanks to @ludicree for pointing this out)
+- Added keybind to toggle overlay
+- Improved accuracy
+- Removed Android and iOS versions for now
+
 # 1.0.1
 - Cache system time instead of calling an expensive function every frame (!) [(#1)](https://github.com/peeetergriffin/lagspike/pull/1)
 - Improve calculations [(#1)](https://github.com/peeetergriffin/lagspike/pull/1)

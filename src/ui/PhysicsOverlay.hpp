@@ -11,8 +11,9 @@ public:
 	bool init() override;
 	
 	void updateDisplay(float dt);
-	void redrawGraph();
-
+	void redrawGraph();	
+	void setShow(bool visible);
+	bool isShow() const;
 private:
 	CCDrawNode* m_graphNode = nullptr;
 	CCLabelBMFont* m_statusLabel = nullptr;

@@ -67,6 +67,7 @@ private:
 	uint32_t m_totalFrames;
 	uint32_t m_missedFrames;
 	float m_audioPhysicsDrift_ms;
+	bool m_isShown;
 
 	std::deque<PhysicsFrame> m_physicsHistory;
 	std::deque<InputEvent> m_inputHistory;

@@ -37,20 +37,25 @@ bool PhysicsMonitor::TimerNode::init() {
 }
 
 void PhysicsMonitor::TimerNode::update(float dt) {
-    if (m_monitor) {
-        float perTickDelta_ms = dt * 250.0f;
+    if (m_monitor && dt > 0) {
+        float actualFrameRate = 1.0f / dt;
+        int physicsTicksPerFrame = static_cast<int>(std::round(PhysicsMonitor::PHYSICS_HZ / actualFrameRate));
+        
+        physicsTicksPerFrame = std::max(1, std::min(16, physicsTicksPerFrame));
+
         uint64_t totalFrame_us = static_cast<uint64_t>(dt * 1000000.0f);
-        uint64_t subTickStep_us = totalFrame_us / 4;
+        uint64_t subTickStep_us = totalFrame_us / physicsTicksPerFrame;
 
         auto frameTime = asp::time::SystemTime::now();
         uint64_t base_now_us = frameTime.timeSinceEpoch().micros();
         
         uint64_t frame_start_us = base_now_us - totalFrame_us;
         
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < physicsTicksPerFrame; i++) {
             uint64_t current_tick_us = frame_start_us + (subTickStep_us * (i + 1));
             
-            m_monitor->beginPhysicsTick(perTickDelta_ms, current_tick_us);
+            // Pass -1 to measure actual deltas from system time, not synthetic ones
+            m_monitor->beginPhysicsTick(-1.0f, current_tick_us);
             m_monitor->processInputIntoPhysics(current_tick_us);
         }
     }
@@ -80,18 +85,25 @@ void PhysicsMonitor::beginPhysicsTick(float syntheticDelta_ms, uint64_t now_us) 
             m_missedFrames++;
         }
 
-        PhysicsFrame frame = {
-            now_us,
-            delta_ms,
-            is_stable,
-            false,
-            0,
-            false
-        };
+        // Filter out garbage deltas (too large or negative)
+        // Valid range: 0.5ms to 500ms (handles any reasonable frame rate)
+        if (delta_ms >= 0.5f && delta_ms <= 500.0f) {
+            PhysicsFrame frame = {
+                now_us,
+                delta_ms,
+                is_stable,
+                false,
+                0,
+                false
+            };
 
-        m_physicsHistory.push_back(frame);
-        if (m_physicsHistory.size() > MAX_HISTORY) {
-            m_physicsHistory.pop_front();
+            m_physicsHistory.push_back(frame);
+            if (m_physicsHistory.size() > MAX_HISTORY) {
+                m_physicsHistory.pop_front();
+            }
+        } else if (delta_ms > 500.0f) {
+            // Garbage delta detected, reset tracking
+            m_lastPhysicsTick_us = 0;
         }
         
         if (m_totalFrames < 5 || m_totalFrames % 60 == 0) {
@@ -175,8 +187,9 @@ float PhysicsMonitor::calculateAudioPhysicsDrift() const {
     
     float totalDelta = 0.0f;
     int validFrames = 0;
+    
     for (const auto& frame : m_physicsHistory) {
-        if (frame.delta_ms <= 50.0f) {
+        if (frame.delta_ms > 0.5f && frame.delta_ms <= 50.0f) {
             totalDelta += frame.delta_ms;
             validFrames++;
         }
@@ -188,8 +201,34 @@ float PhysicsMonitor::calculateAudioPhysicsDrift() const {
 }
 
 bool PhysicsMonitor::isEngineStable() const {
-    if (m_physicsHistory.size() < 10) return false;
-    return (calculateJitter() < JITTER_THRESHOLD_MS) && (getStabilityPercentage() >= 95.0f);
+    if (m_physicsHistory.size() < 5) return false;
+    
+    // PRIMARY: Check for sudden lag spikes in recent frames
+    size_t recentCount = std::min(size_t(8), m_physicsHistory.size());
+    float recentMean = 0.0f;
+    for (size_t i = m_physicsHistory.size() - recentCount; i < m_physicsHistory.size(); ++i) {
+        recentMean += m_physicsHistory[i].delta_ms;
+    }
+    recentMean /= recentCount;
+    
+    // Detect sudden spikes: any frame that's significantly higher than recent average
+    float spikeThreshold = recentMean * 1.5f;  // 50% above average = lag spike
+    bool hasSuddenSpike = false;
+    for (size_t i = m_physicsHistory.size() - recentCount; i < m_physicsHistory.size(); ++i) {
+        if (m_physicsHistory[i].delta_ms > spikeThreshold) {
+            hasSuddenSpike = true;
+            break;
+        }
+    }
+    
+    if (hasSuddenSpike) return false;  // Lag spike detected = immediately unstable
+    
+    // SECONDARY: Check overall session stability and quality
+    float stability = getStabilityPercentage();
+    float jitter = calculateJitter();
+    
+    // Session must be stable overall: 95%+ and jitter < 2.5ms
+    return (stability >= 95.0f) && (jitter < 2.5f);
 }
 
 const std::deque<PhysicsMonitor::PhysicsFrame>& PhysicsMonitor::getPhysicsHistory() const {

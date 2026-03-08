@@ -118,3 +118,12 @@ void PhysicsOverlay::redrawGraph() {
 		x += pixelPerFrame;
 	}
 }
+
+void PhysicsOverlay::setShow(bool visible) {
+	m_showGraph = visible;
+	this->setVisible(visible);
+}
+
+bool PhysicsOverlay::isShow() const {
+	return m_showGraph;
+}

@@ -20,6 +20,7 @@ class $modify(PhysicsMonitorPLHook, PlayLayer) {
 		g_physicsOverlay = PhysicsOverlay::create();
 		
 		if (g_physicsOverlay) {
+			g_physicsOverlay->setShow(false);
 			m_uiLayer->addChild(g_physicsOverlay);
 			g_physicsOverlay->setPosition(10, 10);
 		} else {
