@@ -1,9 +1,6 @@
 #pragma once
 
 #include <Geode/Geode.hpp>
-#include <chrono>
-#include <deque>
-#include <cmath>
 
 using namespace geode::prelude;
 
@@ -46,9 +43,9 @@ public:
 
 	PhysicsMonitor();
 	
-	void beginPhysicsTick(float syntheticDelta_ms = -1.0f);
+	void beginPhysicsTick(float syntheticDelta_ms = -1.0f, uint64_t now_us = 0);
 	void recordButtonInput(bool isStep);
-	void processInputIntoPhysics();
+	void processInputIntoPhysics(uint64_t now_us);
 	
 	float calculateJitter() const;
 	float getAverageFrameDelta() const;

@@ -1,7 +1,5 @@
 #include "PhysicsOverlay.hpp"
 #include "physics/PhysicsMonitor.hpp"
-#include <iomanip>
-#include <sstream>
 
 using namespace geode::prelude;
 
@@ -13,7 +11,7 @@ PhysicsOverlay* PhysicsOverlay::create() {
 		pRet->autorelease();
 		return pRet;
 	}
-	CC_SAFE_DELETE(pRet);
+	delete pRet;
 	return nullptr;
 }
 
